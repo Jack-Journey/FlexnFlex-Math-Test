@@ -26,6 +26,9 @@
 
       console.log('✅ Service Worker registered:', registration.scope);
 
+      // Expose registration globally for React components
+      window.swRegistration = registration;
+
       // Check for updates immediately
       registration.update();
 
@@ -219,8 +222,5 @@
     console.log('📡 Offline');
     window.dispatchEvent(new Event('offline'));
   });
-
-  // Expose registration globally for React components
-  window.swRegistration = registration;
 
 })();
