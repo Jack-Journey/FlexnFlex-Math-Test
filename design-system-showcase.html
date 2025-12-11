@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flo & Flex - UI Design System Showcase</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React and ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Framer Motion -->
+  <script src="https://unpkg.com/framer-motion@11/dist/framer-motion.js"></script>
+
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    /* Custom animations */
+    @keyframes slideUp {
+      from {
+        transform: translateY(100px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+
+    /* Smooth scrolling */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Code block styling */
+    .code-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+    }
+
+    /* Section styling */
+    .section {
+      padding: 3rem 0;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .section:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+    const { motion, AnimatePresence } = Motion;
+
+    // ========================================================================
+    // UI COMPONENTS (Inline for demo purposes)
+    // ========================================================================
+
+    const Button = ({ children, variant = 'primary', size = 'md', disabled = false, fullWidth = false, onClick, className = '' }) => {
+      const baseClasses = 'font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2';
+
+      const variants = {
+        primary: 'bg-gradient-to-br from-purple-400 via-pink-400 to-pink-500 text-white hover:shadow-xl hover:scale-105 active:scale-98 focus:ring-purple-500',
+        secondary: 'bg-white text-slate-800 border-2 border-slate-300 hover:bg-slate-50 hover:shadow-lg active:scale-98 focus:ring-slate-400',
+        success: 'bg-gradient-to-r from-green-400 to-green-500 text-white hover:shadow-xl hover:scale-105 active:scale-98 focus:ring-green-500',
+        danger: 'bg-gradient-to-r from-red-400 to-red-500 text-white hover:shadow-xl hover:scale-105 active:scale-98 focus:ring-red-500',
+        ghost: 'bg-transparent text-slate-700 hover:bg-slate-100 active:scale-98 focus:ring-slate-400',
+      };
+
+      const sizes = {
+        sm: 'px-4 py-2 text-sm',
+        md: 'px-6 py-3 text-base',
+        lg: 'px-8 py-4 text-lg',
+      };
+
+      const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer';
+      const widthClass = fullWidth ? 'w-full' : '';
+
+      return (
+        <motion.button
+          whileHover={!disabled ? { scale: 1.05 } : {}}
+          whileTap={!disabled ? { scale: 0.98 } : {}}
+          className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${disabledClasses} ${widthClass} ${className}`}
+          disabled={disabled}
+          onClick={onClick}
+        >
+          {children}
+        </motion.button>
+      );
+    };
+
+    const Card = ({ children, variant = 'default', padding = 'md', hover = true, className = '' }) => {
+      const baseClasses = 'rounded-2xl transition-all duration-300';
+
+      const variants = {
+        default: 'bg-white shadow-lg',
+        outlined: 'bg-white border-2 border-slate-300',
+        elevated: 'bg-white shadow-2xl',
+        gradient: 'bg-gradient-to-br from-purple-400 via-pink-400 to-pink-500 text-white shadow-xl',
+      };
+
+      const paddings = {
+        none: '',
+        sm: 'p-4',
+        md: 'p-6',
+        lg: 'p-8',
+      };
+
+      const hoverClasses = hover ? 'hover:shadow-2xl hover:scale-105' : '';
+
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`${baseClasses} ${variants[variant]} ${paddings[padding]} ${hoverClasses} ${className}`}
+        >
+          {children}
+        </motion.div>
+      );
+    };
+
+    const Badge = ({ children, variant = 'primary', size = 'md', className = '' }) => {
+      const variants = {
+        primary: 'bg-purple-100 text-purple-800',
+        success: 'bg-green-100 text-green-800',
+        error: 'bg-red-100 text-red-800',
+        warning: 'bg-orange-100 text-orange-800',
+        info: 'bg-blue-100 text-blue-800',
+      };
+
+      const sizes = {
+        sm: 'px-2 py-0.5 text-xs',
+        md: 'px-3 py-1 text-sm',
+        lg: 'px-4 py-1.5 text-base',
+      };
+
+      return (
+        <span className={`inline-flex items-center font-medium rounded-full ${variants[variant]} ${sizes[size]} ${className}`}>
+          {children}
+        </span>
+      );
+    };
+
+    const Input = ({ label, placeholder, value, onChange, error, type = 'text', fullWidth = false }) => {
+      const baseClasses = 'px-4 py-3 rounded-lg border-2 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500';
+      const stateClasses = error ? 'border-red-400' : 'border-slate-300';
+      const widthClass = fullWidth ? 'w-full' : '';
+
+      return (
+        <div className={widthClass}>
+          {label && <label className="block text-sm font-medium text-slate-700 mb-2">{label}</label>}
+          <input
+            type={type}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            className={`${baseClasses} ${stateClasses} ${widthClass} bg-white`}
+          />
+          {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+        </div>
+      );
+    };
+
+    const Alert = ({ variant = 'info', title, children, onClose }) => {
+      const variants = {
+        success: 'bg-green-50 border-green-200 text-green-800',
+        error: 'bg-red-50 border-red-200 text-red-800',
+        warning: 'bg-orange-50 border-orange-200 text-orange-800',
+        info: 'bg-blue-50 border-blue-200 text-blue-800',
+      };
+
+      const icons = {
+        success: '✓',
+        error: '✕',
+        warning: '⚠',
+        info: 'ℹ',
+      };
+
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`p-4 rounded-xl border-2 ${variants[variant]}`}
+        >
+          <div className="flex items-start gap-3">
+            <div className="text-2xl">{icons[variant]}</div>
+            <div className="flex-1">
+              {title && <div className="font-semibold mb-1">{title}</div>}
+              <div className="text-sm">{children}</div>
+            </div>
+            {onClose && (
+              <button onClick={onClose} className="text-current hover:opacity-70">✕</button>
+            )}
+          </div>
+        </motion.div>
+      );
+    };
+
+    const ProgressBar = ({ value = 0, max = 100, variant = 'primary', showLabel = false }) => {
+      const percentage = Math.min((value / max) * 100, 100);
+
+      const variants = {
+        primary: 'bg-gradient-to-r from-purple-400 to-pink-500',
+        success: 'bg-gradient-to-r from-green-400 to-green-500',
+        error: 'bg-gradient-to-r from-red-400 to-red-500',
+        warning: 'bg-gradient-to-r from-orange-400 to-orange-500',
+      };
+
+      return (
+        <div>
+          {showLabel && (
+            <div className="flex justify-between mb-2 text-sm text-slate-600">
+              <span>{value} / {max}</span>
+              <span>{Math.round(percentage)}%</span>
+            </div>
+          )}
+          <div className="w-full bg-slate-200 rounded-full overflow-hidden h-3">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${percentage}%` }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className={`h-full ${variants[variant]}`}
+            />
+          </div>
+        </div>
+      );
+    };
+
+    const Spinner = ({ size = 'md', variant = 'primary' }) => {
+      const sizes = {
+        sm: 'w-4 h-4 border-2',
+        md: 'w-8 h-8 border-3',
+        lg: 'w-12 h-12 border-4',
+      };
+
+      const variants = {
+        primary: 'border-purple-500 border-t-transparent',
+        white: 'border-white border-t-transparent',
+      };
+
+      return <div className={`${sizes[size]} ${variants[variant]} rounded-full animate-spin`} />;
+    };
+
+    const GameCard = ({ title, description, icon, color = 'purple', onClick }) => {
+      const colors = {
+        purple: 'from-purple-400 to-purple-500',
+        pink: 'from-pink-400 to-pink-500',
+        blue: 'from-blue-400 to-blue-500',
+        green: 'from-green-400 to-green-500',
+        orange: 'from-orange-400 to-orange-500',
+      };
+
+      return (
+        <motion.div
+          whileHover={{ scale: 1.05, y: -5 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={onClick}
+          className={`p-6 rounded-3xl bg-gradient-to-br ${colors[color]} text-white shadow-xl cursor-pointer`}
+        >
+          {icon && <div className="text-5xl mb-4">{icon}</div>}
+          <h3 className="text-2xl font-bold mb-2">{title}</h3>
+          {description && <p className="text-white/90 text-sm">{description}</p>}
+        </motion.div>
+      );
+    };
+
+    // ========================================================================
+    // MAIN SHOWCASE APP
+    // ========================================================================
+
+    function DesignSystemShowcase() {
+      const [activeSection, setActiveSection] = useState('buttons');
+      const [inputValue, setInputValue] = useState('');
+      const [progressValue, setProgressValue] = useState(65);
+      const [showToast, setShowToast] = useState(false);
+
+      const sections = [
+        { id: 'overview', name: '🎨 Overview', icon: '🎨' },
+        { id: 'colors', name: '🎨 Colors', icon: '🎨' },
+        { id: 'buttons', name: '🔘 Buttons', icon: '🔘' },
+        { id: 'inputs', name: '📝 Inputs', icon: '📝' },
+        { id: 'cards', name: '🃏 Cards', icon: '🃏' },
+        { id: 'feedback', name: '💬 Feedback', icon: '💬' },
+        { id: 'game', name: '🎮 Game Components', icon: '🎮' },
+        { id: 'examples', name: '✨ Examples', icon: '✨' },
+      ];
+
+      return (
+        <div className="min-h-screen">
+          {/* Header */}
+          <header className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white py-8 sticky top-0 z-50 shadow-2xl">
+            <div className="max-w-7xl mx-auto px-4">
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center"
+              >
+                <h1 className="text-5xl font-bold mb-2">Flo & Flex UI Library</h1>
+                <p className="text-xl text-white/90">Interactive Design System Showcase</p>
+                <div className="flex justify-center gap-3 mt-4">
+                  <Badge variant="info">35+ Components</Badge>
+                  <Badge variant="success">React 18.3.1</Badge>
+                  <Badge variant="warning">Tailwind CSS v4</Badge>
+                </div>
+              </motion.div>
+            </div>
+          </header>
+
+          {/* Navigation */}
+          <nav className="bg-white shadow-md sticky top-24 z-40">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="flex overflow-x-auto py-4 gap-2">
+                {sections.map(section => (
+                  <button
+                    key={section.id}
+                    onClick={() => setActiveSection(section.id)}
+                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
+                      activeSection === section.id
+                        ? 'bg-gradient-to-r from-purple-400 to-pink-500 text-white shadow-lg'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    {section.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </nav>
+
+          {/* Main Content */}
+          <main className="max-w-7xl mx-auto px-4 py-8">
+            {/* Overview Section */}
+            {activeSection === 'overview' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+                    Welcome to the UI Library Showcase
+                  </h2>
+                  <p className="text-lg text-slate-600 mb-4">
+                    A comprehensive collection of 35+ production-ready React components extracted from the Math Adventure game.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <div className="p-4 bg-purple-50 rounded-lg">
+                      <div className="text-3xl mb-2">⚛️</div>
+                      <h3 className="font-bold text-lg mb-1">React 18.3.1</h3>
+                      <p className="text-sm text-slate-600">Modern hooks-based components</p>
+                    </div>
+                    <div className="p-4 bg-pink-50 rounded-lg">
+                      <div className="text-3xl mb-2">🎨</div>
+                      <h3 className="font-bold text-lg mb-1">Tailwind CSS v4</h3>
+                      <p className="text-sm text-slate-600">Utility-first styling</p>
+                    </div>
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <div className="text-3xl mb-2">✨</div>
+                      <h3 className="font-bold text-lg mb-1">Framer Motion</h3>
+                      <p className="text-sm text-slate-600">Smooth animations</p>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card padding="lg">
+                  <h3 className="text-2xl font-bold mb-4">Component Categories</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { name: 'Buttons', count: 2, desc: 'Button, IconButton' },
+                      { name: 'Inputs', count: 3, desc: 'Input, Select, Textarea' },
+                      { name: 'Cards', count: 2, desc: 'Card, GameCard' },
+                      { name: 'Layout', count: 4, desc: 'Container, Grid, Flex, Stack' },
+                      { name: 'Feedback', count: 5, desc: 'Alert, Toast, Badge, Progress, Spinner' },
+                      { name: 'Typography', count: 2, desc: 'Heading, Text' },
+                      { name: 'Game Components', count: 4, desc: 'Score, Level, Question, Timer' },
+                      { name: 'Utilities', count: 3, desc: 'Divider, Spacer, Background' },
+                    ].map((category, i) => (
+                      <div key={i} className="p-4 border-2 border-slate-200 rounded-lg hover:border-purple-400 transition-all">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-lg">{category.name}</h4>
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-bold">
+                            {category.count}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-600">{category.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Colors Section */}
+            {activeSection === 'colors' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-6">Color Palette</h2>
+
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-xl font-bold mb-3">Primary Colors</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        {[
+                          { name: 'Purple', color: 'bg-purple-500', hex: '#9333ea' },
+                          { name: 'Pink', color: 'bg-pink-500', hex: '#ec4899' },
+                          { name: 'Blue', color: 'bg-blue-500', hex: '#3b82f6' },
+                          { name: 'Green', color: 'bg-green-500', hex: '#10b981' },
+                          { name: 'Orange', color: 'bg-orange-500', hex: '#f59e0b' },
+                        ].map((color) => (
+                          <div key={color.name} className="text-center">
+                            <div className={`${color.color} h-20 rounded-lg mb-2 shadow-lg`}></div>
+                            <div className="font-medium">{color.name}</div>
+                            <div className="text-sm text-slate-500">{color.hex}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-bold mb-3">Gradients</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[
+                          { name: 'Primary', class: 'bg-gradient-to-r from-purple-400 via-pink-400 to-pink-500' },
+                          { name: 'Success', class: 'bg-gradient-to-r from-green-400 to-green-500' },
+                          { name: 'Info', class: 'bg-gradient-to-r from-blue-400 to-blue-500' },
+                          { name: 'Warning', class: 'bg-gradient-to-r from-orange-400 to-orange-500' },
+                        ].map((gradient) => (
+                          <div key={gradient.name}>
+                            <div className={`${gradient.class} h-16 rounded-lg shadow-lg flex items-center justify-center text-white font-bold text-lg`}>
+                              {gradient.name}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Buttons Section */}
+            {activeSection === 'buttons' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-6">Button Variants</h2>
+
+                  <div className="space-y-8">
+                    <div>
+                      <h3 className="text-xl font-bold mb-4">Primary Buttons</h3>
+                      <div className="flex flex-wrap gap-4">
+                        <Button variant="primary" size="sm">Small</Button>
+                        <Button variant="primary" size="md">Medium</Button>
+                        <Button variant="primary" size="lg">Large</Button>
+                        <Button variant="primary" disabled>Disabled</Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-bold mb-4">All Variants</h3>
+                      <div className="flex flex-wrap gap-4">
+                        <Button variant="primary">Primary</Button>
+                        <Button variant="secondary">Secondary</Button>
+                        <Button variant="success">Success</Button>
+                        <Button variant="danger">Danger</Button>
+                        <Button variant="ghost">Ghost</Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-bold mb-4">Full Width</h3>
+                      <div className="space-y-3">
+                        <Button variant="primary" fullWidth>Full Width Primary</Button>
+                        <Button variant="secondary" fullWidth>Full Width Secondary</Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-bold mb-4">With Actions</h3>
+                      <div className="flex flex-wrap gap-4">
+                        <Button variant="primary" onClick={() => alert('Button clicked!')}>
+                          Click Me
+                        </Button>
+                        <Button variant="success" onClick={() => setShowToast(true)}>
+                          Show Toast
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Inputs Section */}
+            {activeSection === 'inputs' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-6">Input Components</h2>
+
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-xl font-bold mb-4">Text Input</h3>
+                      <Input
+                        label="Username"
+                        placeholder="Enter your username"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        fullWidth
+                      />
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-bold mb-4">Input with Error</h3>
+                      <Input
+                        label="Email"
+                        placeholder="email@example.com"
+                        type="email"
+                        error="Please enter a valid email address"
+                        fullWidth
+                      />
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-bold mb-4">Different Input Types</h3>
+                      <div className="space-y-4">
+                        <Input type="text" placeholder="Text input" fullWidth />
+                        <Input type="email" placeholder="Email input" fullWidth />
+                        <Input type="password" placeholder="Password input" fullWidth />
+                        <Input type="number" placeholder="Number input" fullWidth />
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Cards Section */}
+            {activeSection === 'cards' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-6">Card Variants</h2>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card variant="default" padding="md">
+                      <h3 className="text-xl font-bold mb-2">Default Card</h3>
+                      <p className="text-slate-600">Standard card with shadow</p>
+                    </Card>
+
+                    <Card variant="outlined" padding="md">
+                      <h3 className="text-xl font-bold mb-2">Outlined Card</h3>
+                      <p className="text-slate-600">Card with border</p>
+                    </Card>
+
+                    <Card variant="elevated" padding="md">
+                      <h3 className="text-xl font-bold mb-2">Elevated Card</h3>
+                      <p className="text-slate-600">Card with large shadow</p>
+                    </Card>
+
+                    <Card variant="gradient" padding="md">
+                      <h3 className="text-xl font-bold mb-2">Gradient Card</h3>
+                      <p className="text-white/90">Card with gradient background</p>
+                    </Card>
+                  </div>
+                </Card>
+
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-6">Game Cards</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <GameCard
+                      title="Addition"
+                      description="Practice adding numbers"
+                      icon="➕"
+                      color="purple"
+                      onClick={() => alert('Addition selected!')}
+                    />
+                    <GameCard
+                      title="Subtraction"
+                      description="Practice subtracting"
+                      icon="➖"
+                      color="pink"
+                      onClick={() => alert('Subtraction selected!')}
+                    />
+                    <GameCard
+                      title="Multiplication"
+                      description="Times tables"
+                      icon="✖️"
+                      color="blue"
+                      onClick={() => alert('Multiplication selected!')}
+                    />
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Feedback Section */}
+            {activeSection === 'feedback' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-6">Alerts</h2>
+                  <div className="space-y-4">
+                    <Alert variant="success" title="Success!">
+                      Your changes have been saved successfully.
+                    </Alert>
+                    <Alert variant="error" title="Error">
+                      There was a problem processing your request.
+                    </Alert>
+                    <Alert variant="warning" title="Warning">
+                      Please review your input before submitting.
+                    </Alert>
+                    <Alert variant="info" title="Info">
+                      New features are now available!
+                    </Alert>
+                  </div>
+                </Card>
+
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-6">Badges</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-bold mb-2">Sizes</h3>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <Badge variant="primary" size="sm">Small</Badge>
+                        <Badge variant="primary" size="md">Medium</Badge>
+                        <Badge variant="primary" size="lg">Large</Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-bold mb-2">Variants</h3>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="primary">Primary</Badge>
+                        <Badge variant="success">Success</Badge>
+                        <Badge variant="error">Error</Badge>
+                        <Badge variant="warning">Warning</Badge>
+                        <Badge variant="info">Info</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-6">Progress Bars</h2>
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-sm font-medium mb-2">Primary - {progressValue}%</p>
+                      <ProgressBar value={progressValue} variant="primary" showLabel />
+                      <div className="flex gap-2 mt-3">
+                        <Button size="sm" variant="secondary" onClick={() => setProgressValue(Math.max(0, progressValue - 10))}>-10</Button>
+                        <Button size="sm" variant="secondary" onClick={() => setProgressValue(Math.min(100, progressValue + 10))}>+10</Button>
+                      </div>
+                    </div>
+                    <ProgressBar value={85} variant="success" showLabel />
+                    <ProgressBar value={45} variant="warning" showLabel />
+                    <ProgressBar value={25} variant="error" showLabel />
+                  </div>
+                </Card>
+
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-6">Spinners</h2>
+                  <div className="flex flex-wrap gap-8 items-center">
+                    <div>
+                      <p className="text-sm font-medium mb-2">Small</p>
+                      <Spinner size="sm" variant="primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium mb-2">Medium</p>
+                      <Spinner size="md" variant="primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium mb-2">Large</p>
+                      <Spinner size="lg" variant="primary" />
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Game Components Section */}
+            {activeSection === 'game' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-6">Game-Specific Components</h2>
+                  <div className="text-center py-12">
+                    <p className="text-slate-600">
+                      Game components include ScoreDisplay, LevelIndicator, QuestionCard, and Timer.
+                      These are specialized components for educational game interfaces.
+                    </p>
+                    <p className="text-slate-500 mt-4">
+                      Check the full documentation for implementation details.
+                    </p>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Examples Section */}
+            {activeSection === 'examples' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-6">Complete Examples</h2>
+
+                  <div className="space-y-6">
+                    <Alert variant="info" title="Example Templates">
+                      Check out ui-library-examples.jsx for 7 complete implementation examples including:
+                      game selection screens, quiz interfaces, settings panels, and more!
+                    </Alert>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        { title: 'Game Selection', desc: 'Interactive game mode picker with cards' },
+                        { title: 'Quiz Interface', desc: 'Question display with timer and scoring' },
+                        { title: 'Settings Panel', desc: 'Form inputs and user preferences' },
+                        { title: 'Achievement Modal', desc: 'Reward notifications and badges' },
+                        { title: 'Dashboard', desc: 'Stats and progress tracking' },
+                        { title: 'Loading States', desc: 'Various loading indicators' },
+                      ].map((example, i) => (
+                        <Card key={i} variant="outlined" padding="md" hover>
+                          <h3 className="font-bold text-lg mb-1">{example.title}</h3>
+                          <p className="text-sm text-slate-600">{example.desc}</p>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+
+                <Card padding="lg">
+                  <h2 className="text-3xl font-bold mb-6">Sample Dashboard Layout</h2>
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <Card variant="outlined" padding="sm">
+                      <p className="text-sm text-slate-600 mb-1">Total Score</p>
+                      <p className="text-2xl font-bold">1,247</p>
+                      <Badge variant="success" size="sm">+12%</Badge>
+                    </Card>
+                    <Card variant="outlined" padding="sm">
+                      <p className="text-sm text-slate-600 mb-1">Problems</p>
+                      <p className="text-2xl font-bold">324</p>
+                      <Badge variant="info" size="sm">This week</Badge>
+                    </Card>
+                    <Card variant="outlined" padding="sm">
+                      <p className="text-sm text-slate-600 mb-1">Accuracy</p>
+                      <p className="text-2xl font-bold">94%</p>
+                      <Badge variant="warning" size="sm">Improving</Badge>
+                    </Card>
+                    <Card variant="outlined" padding="sm">
+                      <p className="text-sm text-slate-600 mb-1">Level</p>
+                      <p className="text-2xl font-bold">15</p>
+                      <Badge variant="primary" size="sm">Expert</Badge>
+                    </Card>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm">Addition</span>
+                        <span className="text-sm font-semibold">85/100</span>
+                      </div>
+                      <ProgressBar value={85} variant="primary" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm">Subtraction</span>
+                        <span className="text-sm font-semibold">92/100</span>
+                      </div>
+                      <ProgressBar value={92} variant="success" />
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+          </main>
+
+          {/* Footer */}
+          <footer className="bg-slate-900 text-white py-8 mt-12">
+            <div className="max-w-7xl mx-auto px-4 text-center">
+              <h3 className="text-2xl font-bold mb-2">Flo & Flex Math Game UI Library</h3>
+              <p className="text-slate-400 mb-4">Built with React, Tailwind CSS, and Framer Motion</p>
+              <div className="flex justify-center gap-4">
+                <Badge variant="info">35+ Components</Badge>
+                <Badge variant="success">Production Ready</Badge>
+                <Badge variant="warning">Fully Documented</Badge>
+              </div>
+            </div>
+          </footer>
+
+          {/* Toast Notification */}
+          <AnimatePresence>
+            {showToast && (
+              <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 50 }}
+                className="fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full bg-green-500 text-white shadow-xl z-50"
+              >
+                ✓ Action completed successfully!
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      );
+    }
+
+    // Render the app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<DesignSystemShowcase />);
+  </script>
+</body>
+</html>
